@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<manifest xmlns="http://tizen.org/ns/packages" api-version="2.3.1" package="org.example.metronomee" version="1.0.0">
+    <author email="dlworldpeace@hotmail.com" href="https://github.com/dlworldpeace">D.L. Lawrence</author>
+    <description>A galaxy app for music intrument player! Hooray~</description>
+    <profile name="wearable"/>
+    <ui-application appid="org.example.metronomee" exec="metronomee" multiple="false" nodisplay="false" taskmanage="true" type="capp">
+        <label>metronomee</label>
+        <icon>ic_launcher.png</icon>
+    </ui-application>
+</manifest>
