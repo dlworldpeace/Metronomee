@@ -112,22 +112,21 @@ create_base_gui(appdata_s *ad)
     elm_object_part_content_set(ad->layout, "elm.swallow.button", ad->button);
     ad->button_showing_play = true;
 
-//	/* Box */
-//	ad->box = elm_box_add(ad->conform);
-//	evas_object_size_hint_weight_set(ad->box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-//	evas_object_show(ad->box);
-//	elm_object_content_set(ad->conform, ad->box);
-//
-//	/* Label */
-//	ad->label = elm_label_add(ad->box);
-//	elm_object_text_set(ad->label, "<align=center>Hello Tizen</align>");
-//	evas_object_size_hint_weight_set(ad->label, 0.0, 0.0);
-//	/* Comment out the elm_object_content_set() function */
-//	/* elm_object_content_set(ad->conform, ad->label); */
-//	evas_object_size_hint_align_set(ad->label, EVAS_HINT_FILL, EVAS_HINT_FILL);
-//	evas_object_size_hint_min_set(ad->label, 50, 50);
-//	evas_object_show(ad->label);
-//	elm_box_pack_end(ad->box, ad->label);
+	/* Box that contains a Label */
+	ad->box = elm_box_add(ad->layout);
+	evas_object_size_hint_weight_set(ad->box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_show(ad->box);
+	elm_object_content_set(ad->layout, ad->box);
+	ad->label = elm_label_add(ad->box);
+	elm_object_text_set(ad->label, "<align=center>100 BPM</align>");
+	evas_object_size_hint_weight_set(ad->label, 0.0, 0.0);
+	/* Comment out the elm_object_content_set() function */
+	/* elm_object_content_set(ad->conform, ad->label); */
+	evas_object_size_hint_align_set(ad->label, EVAS_HINT_FILL, EVAS_HINT_FILL);
+	evas_object_size_hint_min_set(ad->label, 50, 50);
+	evas_object_show(ad->label);
+	elm_box_pack_end(ad->box, ad->label);
+	elm_object_part_content_set(ad->layout, "elm.swallow.content", ad->box);
 
 	/* Show window after base gui is set up */
 	evas_object_show(ad->win);
