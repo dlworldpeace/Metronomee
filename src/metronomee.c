@@ -7,6 +7,7 @@ typedef struct appdata {
 	Evas_Object *layout;
 	Evas_Object *label;
 	Evas_Object *button;
+	bool button_is_play;
 } appdata_s;
 
 static void
@@ -28,15 +29,19 @@ win_back_cb(void *data, Evas_Object *obj, void *event_info)
 void
 clicked_cb(void *data, Evas_Object *obj, void *event_info)
 {
-    dlog_print(DLOG_INFO, LOG_TAG, "Button clicked\n");
+	appdata_s *ad = (appdata_s*)data;
+	if(ad->button_is_play) {
+		elm_object_text_set(ad->button, "Stop");
+		ad->button_is_play = false;
+	} else {
+		elm_object_text_set(ad->button, "Play");
+		ad->button_is_play = true;
+	}
 }
 
 static void
 create_base_gui(appdata_s *ad)
 {
-    int width = 360;
-    int height = 360;
-
 	/* Window */
 	/* Create and initialize elm_win.
 	   elm_win is mandatory to manipulate window. */
@@ -67,6 +72,15 @@ create_base_gui(appdata_s *ad)
 	evas_object_show(ad->layout);
 	elm_object_content_set(ad->conform, ad->layout);
 
+	/* Bottom button */
+	ad->button = elm_button_add(ad->layout);
+	elm_object_text_set(ad->button, "Play");
+	elm_object_style_set(ad->button, "bottom");
+	evas_object_smart_callback_add(ad->button, "clicked", clicked_cb, ad);
+	evas_object_show(ad->button);
+    elm_object_part_content_set(ad->layout, "elm.swallow.button", ad->button);
+    ad->button_is_play = true;
+
 //	/* Box */
 //	ad->box = elm_box_add(ad->conform);
 //	evas_object_size_hint_weight_set(ad->box, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
@@ -83,14 +97,6 @@ create_base_gui(appdata_s *ad)
 //	evas_object_size_hint_min_set(ad->label, 50, 50);
 //	evas_object_show(ad->label);
 //	elm_box_pack_end(ad->box, ad->label);
-
-	/* Bottom button */
-	ad->button = elm_button_add(ad->layout);
-	elm_object_text_set(ad->button, "Play");
-	elm_object_style_set(ad->button, "bottom");
-	evas_object_smart_callback_add(ad->button, "clicked", clicked_cb, ad);
-	evas_object_show(ad->button);
-    elm_object_part_content_set(ad->layout, "elm.swallow.button", ad->button);
 
 	/* Show window after base gui is set up */
 	evas_object_show(ad->win);
