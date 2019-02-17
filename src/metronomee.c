@@ -7,7 +7,9 @@ typedef struct appdata {
 	Evas_Object *layout;
 	Evas_Object *label;
 	Evas_Object *button;
-	bool button_is_play;
+	bool button_showing_play;
+	Eext_Circle_Surface *circle_surface;
+	Evas_Object *circle_slider;
 } appdata_s;
 
 static void
@@ -26,17 +28,26 @@ win_back_cb(void *data, Evas_Object *obj, void *event_info)
 
 /* Callback for the "clicked" signal */
 /* Called when the button is clicked by the user */
-void
+static void
 clicked_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	appdata_s *ad = (appdata_s*)data;
-	if(ad->button_is_play) {
+	if(ad->button_showing_play) {
 		elm_object_text_set(ad->button, "Stop");
-		ad->button_is_play = false;
+		ad->button_showing_play = false;
 	} else {
 		elm_object_text_set(ad->button, "Play");
-		ad->button_is_play = true;
+		ad->button_showing_play = true;
 	}
+}
+
+/* Callback for the "value,changed" signal */
+/* Called when the value of the circle slider is changed */
+static void
+_value_changed_cb(void *data, Evas_Object *obj, void *event_info)
+{
+    double _val = eext_circle_object_value_get(obj);
+    dlog_print(DLOG_INFO, LOG_TAG, "Circle slider value changed. %0.1f\n", _val);
 }
 
 static void
@@ -72,6 +83,26 @@ create_base_gui(appdata_s *ad)
 	evas_object_show(ad->layout);
 	elm_object_content_set(ad->conform, ad->layout);
 
+    /* Circle Slider */
+	const double MIN_ANGLE = -120.0;
+	const double MAX_ANGLE = 120.0;
+    ad->circle_surface = eext_circle_surface_conformant_add(ad->conform);
+    eext_object_event_callback_add(ad->layout, EEXT_CALLBACK_BACK, eext_naviframe_back_cb, NULL);
+    eext_object_event_callback_add(ad->layout, EEXT_CALLBACK_MORE, eext_naviframe_more_cb, NULL);
+    ad->circle_slider = eext_circle_object_slider_add(ad->layout, ad->circle_surface);
+    eext_circle_object_angle_min_max_set(ad->circle_slider, MIN_ANGLE, MAX_ANGLE);
+    eext_circle_object_item_angle_min_max_set(ad->circle_slider, "bg", MIN_ANGLE, MAX_ANGLE);
+    eext_circle_object_value_min_max_set(ad->circle_slider, 40.0, 218.0); // range from 40bpm to 218bpm
+    eext_circle_object_value_set(ad->circle_slider, 100.0);
+    eext_circle_object_slider_step_set(ad->circle_slider, 1.0);
+    eext_circle_object_color_set(ad->circle_slider, 0, 0, 255, 255);
+    eext_circle_object_item_color_set(ad->circle_slider, "bg",  0, 0, 255, 125); // set alpha to translucent for background bar
+    double default_radius = eext_circle_object_radius_get(ad->circle_slider);
+    eext_circle_object_radius_set(ad->circle_slider, default_radius * 0.7);
+    eext_circle_object_item_radius_set(ad->circle_slider, "bg", default_radius * 0.7);
+    eext_rotary_object_event_activated_set(ad->circle_slider, EINA_TRUE);
+    evas_object_smart_callback_add(ad->circle_slider, "value,changed", _value_changed_cb, 0);
+
 	/* Bottom button */
 	ad->button = elm_button_add(ad->layout);
 	elm_object_text_set(ad->button, "Play");
@@ -79,7 +110,7 @@ create_base_gui(appdata_s *ad)
 	evas_object_smart_callback_add(ad->button, "clicked", clicked_cb, ad);
 	evas_object_show(ad->button);
     elm_object_part_content_set(ad->layout, "elm.swallow.button", ad->button);
-    ad->button_is_play = true;
+    ad->button_showing_play = true;
 
 //	/* Box */
 //	ad->box = elm_box_add(ad->conform);
