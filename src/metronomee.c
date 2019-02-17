@@ -3,13 +3,14 @@
 typedef struct appdata {
 	Evas_Object *win;
 	Evas_Object *conform;
-	Evas_Object *box;
-	Evas_Object *layout;
-	Evas_Object *label;
-	Evas_Object *button;
-	bool button_showing_play;
 	Eext_Circle_Surface *circle_surface;
 	Evas_Object *circle_slider;
+	Evas_Object *layout;
+	Evas_Object *button;
+	Evas_Object *box;
+	Evas_Object *label;
+	bool button_showing_play;
+
 } appdata_s;
 
 static void
@@ -29,7 +30,7 @@ win_back_cb(void *data, Evas_Object *obj, void *event_info)
 /* Callback for the "clicked" signal */
 /* Called when the button is clicked by the user */
 static void
-clicked_cb(void *data, Evas_Object *obj, void *event_info)
+_bottom_button_clicked_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	appdata_s *ad = (appdata_s*)data;
 	if(ad->button_showing_play) {
@@ -44,10 +45,17 @@ clicked_cb(void *data, Evas_Object *obj, void *event_info)
 /* Callback for the "value,changed" signal */
 /* Called when the value of the circle slider is changed */
 static void
-_value_changed_cb(void *data, Evas_Object *obj, void *event_info)
+_circle_slider_value_changed_cb(void *data, Evas_Object *circle_slider, void *event_info)
 {
-    double _val = eext_circle_object_value_get(obj);
-    dlog_print(DLOG_INFO, LOG_TAG, "Circle slider value changed. %0.1f\n", _val);
+	appdata_s *ad = (appdata_s*)data;
+	int bpm = (int) eext_circle_object_value_get(circle_slider);
+
+	char *text = (char*)malloc(29 * sizeof(char));
+	sprintf(text, "%s%d%s", "<align=center>", bpm, " BPM</align>");
+	elm_object_text_set(ad->label, text);
+
+	free(text);
+	text = NULL;
 }
 
 static void
@@ -101,13 +109,13 @@ create_base_gui(appdata_s *ad)
     eext_circle_object_radius_set(ad->circle_slider, default_radius * 0.7);
     eext_circle_object_item_radius_set(ad->circle_slider, "bg", default_radius * 0.7);
     eext_rotary_object_event_activated_set(ad->circle_slider, EINA_TRUE);
-    evas_object_smart_callback_add(ad->circle_slider, "value,changed", _value_changed_cb, 0);
+    evas_object_smart_callback_add(ad->circle_slider, "value,changed", _circle_slider_value_changed_cb, ad);
 
 	/* Bottom button */
 	ad->button = elm_button_add(ad->layout);
 	elm_object_text_set(ad->button, "Play");
 	elm_object_style_set(ad->button, "bottom");
-	evas_object_smart_callback_add(ad->button, "clicked", clicked_cb, ad);
+	evas_object_smart_callback_add(ad->button, "clicked", _bottom_button_clicked_cb, ad);
 	evas_object_show(ad->button);
     elm_object_part_content_set(ad->layout, "elm.swallow.button", ad->button);
     ad->button_showing_play = true;
@@ -120,8 +128,6 @@ create_base_gui(appdata_s *ad)
 	ad->label = elm_label_add(ad->box);
 	elm_object_text_set(ad->label, "<align=center>100 BPM</align>");
 	evas_object_size_hint_weight_set(ad->label, 0.0, 0.0);
-	/* Comment out the elm_object_content_set() function */
-	/* elm_object_content_set(ad->conform, ad->label); */
 	evas_object_size_hint_align_set(ad->label, EVAS_HINT_FILL, EVAS_HINT_FILL);
 	evas_object_size_hint_min_set(ad->label, 50, 50);
 	evas_object_show(ad->label);
