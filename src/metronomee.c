@@ -1,4 +1,8 @@
 #include "metronomee.h"
+#include <player.h>
+#include <storage.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct appdata {
 	Evas_Object *win;
@@ -10,8 +14,17 @@ typedef struct appdata {
 	Evas_Object *box;
 	Evas_Object *label;
 	bool button_showing_play;
-
+	player_h player;
 } appdata_s;
+
+char* concat(const char *s1, const char *s2)
+{
+    char *result = malloc(strlen(s1) + strlen(s2) + 1); // +1 for the null-terminator
+    // in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
 
 static void
 win_delete_request_cb(void *data, Evas_Object *obj, void *event_info)
@@ -32,12 +45,22 @@ win_back_cb(void *data, Evas_Object *obj, void *event_info)
 static void
 _bottom_button_clicked_cb(void *data, Evas_Object *obj, void *event_info)
 {
-	appdata_s *ad = (appdata_s*)data;
+	appdata_s *ad = data;
 	if(ad->button_showing_play) {
 		elm_object_text_set(ad->button, "Stop");
+
+		int error_code = player_start(ad->player);
+		if (error_code != PLAYER_ERROR_NONE)
+		    dlog_print(DLOG_ERROR, LOG_TAG, "failed to start player: error code = %d", error_code);
+
 		ad->button_showing_play = false;
 	} else {
 		elm_object_text_set(ad->button, "Play");
+
+		int error_code = player_stop(ad->player);
+		if (error_code != PLAYER_ERROR_NONE)
+		    dlog_print(DLOG_ERROR, LOG_TAG, "fail to stop player: error code = %d", error_code);
+
 		ad->button_showing_play = true;
 	}
 }
@@ -47,15 +70,36 @@ _bottom_button_clicked_cb(void *data, Evas_Object *obj, void *event_info)
 static void
 _circle_slider_value_changed_cb(void *data, Evas_Object *circle_slider, void *event_info)
 {
-	appdata_s *ad = (appdata_s*)data;
+	appdata_s *ad = data;
 	int bpm = (int) eext_circle_object_value_get(circle_slider);
 
 	char *text = (char*)malloc(29 * sizeof(char));
-	sprintf(text, "%s%d%s", "<align=center>", bpm, " BPM</align>");
+	sprintf(text, "%s%d %s", "<align=center>", bpm, "BPM</align>");
 	elm_object_text_set(ad->label, text);
 
 	free(text);
 	text = NULL;
+}
+
+static void
+init_base_player(appdata_s *ad)
+{
+    int error_code = player_create(&ad->player);
+    if (error_code != PLAYER_ERROR_NONE)
+        dlog_print(DLOG_ERROR, LOG_TAG, "failed to create");
+
+    /*
+       Perform more playback configuration, such as setting callbacks,
+       setting the source file URI, and preparing the player
+    */
+    char *audio_path = concat(app_get_shared_resource_path(), "Beat.wav");
+    error_code = player_set_uri(ad->player, audio_path);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to set URI: error code = %d", error_code);
+	error_code = player_prepare(ad->player);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to prepare player: error code = %d", error_code);
+	free(audio_path);
 }
 
 static void
@@ -147,6 +191,7 @@ app_create(void *data)
 		If this function returns false, the application is terminated */
 	appdata_s *ad = data;
 
+	init_base_player(ad);
 	create_base_gui(ad);
 
 	return true;
@@ -173,7 +218,14 @@ app_resume(void *data)
 static void
 app_terminate(void *data)
 {
+	appdata_s *ad = data;
+
 	/* Release all resources. */
+	int error_code = player_stop(ad->player);
+	error_code = player_unprepare(ad->player);
+	error_code = player_destroy(ad->player);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "fail to destroy recorder: error code = %d", error_code);
 }
 
 static void
