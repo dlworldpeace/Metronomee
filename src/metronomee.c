@@ -115,7 +115,9 @@ _bottom_button_clicked_cb(void *data, Evas_Object *obj, void *event_info)
 	if(ad->button_showing_play) {
 		elm_object_text_set(ad->button, "Stop");
 
-		ad->timer = ecore_timer_add(0.375, my_timed_cb, ad);
+		double bpm = eext_circle_object_value_get(ad->circle_slider);
+		double interval = 60.0/bpm;
+		ad->timer = ecore_timer_add(interval, my_timed_cb, ad);
 
 		ad->button_showing_play = false;
 	} else {
@@ -133,11 +135,15 @@ static void
 _circle_slider_value_changed_cb(void *data, Evas_Object *circle_slider, void *event_info)
 {
 	appdata_s *ad = data;
-	int bpm = (int) eext_circle_object_value_get(circle_slider);
+	double bpm = eext_circle_object_value_get(circle_slider);
+	double interval = 60.0/bpm;
 
 	char *text = (char*)malloc(29 * sizeof(char));
-	sprintf(text, "%s%d %s", "<align=center>", bpm, "BPM</align>");
+	sprintf(text, "%s%d %s", "<align=center>", (int)bpm, "BPM</align>");
 	elm_object_text_set(ad->label, text);
+
+	if(	ecore_timer_interval_get(ad->timer) != 0)
+		ecore_timer_interval_set(ad->timer, interval);
 
 	free(text);
 	text = NULL;
