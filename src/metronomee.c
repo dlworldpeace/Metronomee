@@ -14,7 +14,11 @@ typedef struct appdata {
 	Evas_Object *box;
 	Evas_Object *label;
 	bool button_showing_play;
-	player_h player;
+	player_h player0;
+	player_h player1;
+	player_h player2;
+	player_h player3;
+	Ecore_Timer *timer;
 } appdata_s;
 
 char* concat(const char *s1, const char *s2)
@@ -40,6 +44,68 @@ win_back_cb(void *data, Evas_Object *obj, void *event_info)
 	elm_win_lower(ad->win);
 }
 
+Eina_Bool
+my_timed_cb(void *data)
+{
+	appdata_s *ad = data;
+	static int count = 0;
+	int remainder = count % 4;
+	int error_code = 0;
+
+    if (true) {
+
+    	// play rhythm of 'pling~klack~klack~klack'
+    	switch(remainder) {
+
+    	   case 0  :
+    		    error_code = player_stop(ad->player0);
+				if (error_code != PLAYER_ERROR_NONE)
+					dlog_print(DLOG_ERROR, LOG_TAG, "failed to stop player 0: error code = %d", error_code);
+				error_code = player_start(ad->player0);
+				if (error_code != PLAYER_ERROR_NONE)
+					dlog_print(DLOG_ERROR, LOG_TAG, "failed to start player 0: error code = %d", error_code);
+				break;
+
+    	   case 1  :
+				error_code = player_stop(ad->player1);
+				if (error_code != PLAYER_ERROR_NONE)
+					dlog_print(DLOG_ERROR, LOG_TAG, "failed to stop player 1: error code = %d", error_code);
+
+				error_code = player_start(ad->player1);
+				if (error_code != PLAYER_ERROR_NONE)
+					dlog_print(DLOG_ERROR, LOG_TAG, "failed to start player 1: error code = %d", error_code);
+				break;
+
+    	   case 2  :
+				error_code = player_stop(ad->player2);
+				if (error_code != PLAYER_ERROR_NONE)
+					dlog_print(DLOG_ERROR, LOG_TAG, "failed to stop player 2: error code = %d", error_code);
+
+				error_code = player_start(ad->player2);
+				if (error_code != PLAYER_ERROR_NONE)
+					dlog_print(DLOG_ERROR, LOG_TAG, "failed to start player 2: error code = %d", error_code);
+				break;
+
+    	   case 3  :
+				error_code = player_stop(ad->player3);
+				if (error_code != PLAYER_ERROR_NONE)
+					dlog_print(DLOG_ERROR, LOG_TAG, "failed to stop player 3: error code = %d", error_code);
+
+				error_code = player_start(ad->player3);
+				if (error_code != PLAYER_ERROR_NONE)
+					dlog_print(DLOG_ERROR, LOG_TAG, "failed to start player 3: error code = %d", error_code);
+				break;
+    	}
+
+    	if(count == 100)
+    		count = 0;
+    	count++;
+        return ECORE_CALLBACK_RENEW;
+    }
+
+    return ECORE_CALLBACK_CANCEL;
+}
+
 /* Callback for the "clicked" signal */
 /* Called when the button is clicked by the user */
 static void
@@ -49,17 +115,13 @@ _bottom_button_clicked_cb(void *data, Evas_Object *obj, void *event_info)
 	if(ad->button_showing_play) {
 		elm_object_text_set(ad->button, "Stop");
 
-		int error_code = player_start(ad->player);
-		if (error_code != PLAYER_ERROR_NONE)
-		    dlog_print(DLOG_ERROR, LOG_TAG, "failed to start player: error code = %d", error_code);
+		ad->timer = ecore_timer_add(0.375, my_timed_cb, ad);
 
 		ad->button_showing_play = false;
 	} else {
 		elm_object_text_set(ad->button, "Play");
 
-		int error_code = player_stop(ad->player);
-		if (error_code != PLAYER_ERROR_NONE)
-		    dlog_print(DLOG_ERROR, LOG_TAG, "fail to stop player: error code = %d", error_code);
+		ecore_timer_del(ad->timer);
 
 		ad->button_showing_play = true;
 	}
@@ -84,22 +146,60 @@ _circle_slider_value_changed_cb(void *data, Evas_Object *circle_slider, void *ev
 static void
 init_base_player(appdata_s *ad)
 {
-    int error_code = player_create(&ad->player);
+	int error_code = 0;
+
+    error_code = player_create(&ad->player0);
     if (error_code != PLAYER_ERROR_NONE)
-        dlog_print(DLOG_ERROR, LOG_TAG, "failed to create");
+        dlog_print(DLOG_ERROR, LOG_TAG, "failed to create player 0");
+    error_code = player_create(&ad->player1);
+    if (error_code != PLAYER_ERROR_NONE)
+        dlog_print(DLOG_ERROR, LOG_TAG, "failed to create player 1");
+    error_code = player_create(&ad->player2);
+    if (error_code != PLAYER_ERROR_NONE)
+        dlog_print(DLOG_ERROR, LOG_TAG, "failed to create player 2");
+    error_code = player_create(&ad->player3);
+    if (error_code != PLAYER_ERROR_NONE)
+        dlog_print(DLOG_ERROR, LOG_TAG, "failed to create player 3");
 
     /*
        Perform more playback configuration, such as setting callbacks,
        setting the source file URI, and preparing the player
     */
-    char *audio_path = concat(app_get_shared_resource_path(), "Beat.wav");
-    error_code = player_set_uri(ad->player, audio_path);
+    char *audio_path_0 = concat(app_get_shared_resource_path(), "pling.wav");
+    char *audio_path_1 = concat(app_get_shared_resource_path(), "klack1.wav");
+    char *audio_path_2 = concat(app_get_shared_resource_path(), "klack2.wav");
+    char *audio_path_3 = concat(app_get_shared_resource_path(), "klack3.wav");
+
+    error_code = player_set_uri(ad->player0, audio_path_0);
 	if (error_code != PLAYER_ERROR_NONE)
-		dlog_print(DLOG_ERROR, LOG_TAG, "failed to set URI: error code = %d", error_code);
-	error_code = player_prepare(ad->player);
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to set URI for player 0: error code = %d", error_code);
+    error_code = player_set_uri(ad->player1, audio_path_1);
 	if (error_code != PLAYER_ERROR_NONE)
-		dlog_print(DLOG_ERROR, LOG_TAG, "failed to prepare player: error code = %d", error_code);
-	free(audio_path);
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to set URI for player 1: error code = %d", error_code);
+    error_code = player_set_uri(ad->player2, audio_path_2);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to set URI for player 2: error code = %d", error_code);
+    error_code = player_set_uri(ad->player3, audio_path_3);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to set URI for player 3: error code = %d", error_code);
+
+	error_code = player_prepare(ad->player0);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to prepare player 0: error code = %d", error_code);
+	error_code = player_prepare(ad->player1);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to prepare player 1: error code = %d", error_code);
+	error_code = player_prepare(ad->player2);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to prepare player 2: error code = %d", error_code);
+	error_code = player_prepare(ad->player3);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "failed to prepare player 3: error code = %d", error_code);
+
+	free(audio_path_0);
+	free(audio_path_1);
+	free(audio_path_2);
+	free(audio_path_3);
 }
 
 static void
@@ -219,13 +319,32 @@ static void
 app_terminate(void *data)
 {
 	appdata_s *ad = data;
+	int error_code = 0;
 
 	/* Release all resources. */
-	int error_code = player_stop(ad->player);
-	error_code = player_unprepare(ad->player);
-	error_code = player_destroy(ad->player);
+	error_code = player_stop(ad->player0);
+	error_code = player_unprepare(ad->player0);
+	error_code = player_destroy(ad->player0);
 	if (error_code != PLAYER_ERROR_NONE)
-		dlog_print(DLOG_ERROR, LOG_TAG, "fail to destroy recorder: error code = %d", error_code);
+		dlog_print(DLOG_ERROR, LOG_TAG, "fail to destroy player 0: error code = %d", error_code);
+
+	error_code = player_stop(ad->player1);
+	error_code = player_unprepare(ad->player1);
+	error_code = player_destroy(ad->player1);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "fail to destroy player 1: error code = %d", error_code);
+
+	error_code = player_stop(ad->player2);
+	error_code = player_unprepare(ad->player2);
+	error_code = player_destroy(ad->player2);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "fail to destroy player 2: error code = %d", error_code);
+
+	error_code = player_stop(ad->player3);
+	error_code = player_unprepare(ad->player3);
+	error_code = player_destroy(ad->player3);
+	if (error_code != PLAYER_ERROR_NONE)
+		dlog_print(DLOG_ERROR, LOG_TAG, "fail to destroy player 3: error code = %d", error_code);
 }
 
 static void
