@@ -226,8 +226,6 @@ create_base_gui(appdata_s *ad)
 	eext_object_event_callback_add(ad->win, EEXT_CALLBACK_BACK, win_back_cb, ad);
 
 	/* Conformant */
-	/* Create the box component using the conformant
-	 *  as the parent, and set the box as the conformant content: */
 	ad->conform = elm_conformant_add(ad->win);
 	elm_win_indicator_mode_set(ad->win, ELM_WIN_INDICATOR_SHOW);
 	elm_win_indicator_opacity_set(ad->win, ELM_WIN_INDICATOR_OPAQUE);
@@ -241,12 +239,19 @@ create_base_gui(appdata_s *ad)
 	evas_object_show(ad->layout);
 	elm_object_content_set(ad->conform, ad->layout);
 
+	/* Bottom button */
+	ad->button = elm_button_add(ad->layout);
+	elm_object_text_set(ad->button, "Play");
+	elm_object_style_set(ad->button, "bottom");
+	evas_object_smart_callback_add(ad->button, "clicked", _bottom_button_clicked_cb, ad);
+	evas_object_show(ad->button);
+    elm_object_part_content_set(ad->layout, "elm.swallow.button", ad->button);
+    ad->button_showing_play = true;
+
     /* Circle Slider */
 	const double MIN_ANGLE = -120.0;
 	const double MAX_ANGLE = 120.0;
-    ad->circle_surface = eext_circle_surface_conformant_add(ad->conform);
-    eext_object_event_callback_add(ad->layout, EEXT_CALLBACK_BACK, eext_naviframe_back_cb, NULL);
-    eext_object_event_callback_add(ad->layout, EEXT_CALLBACK_MORE, eext_naviframe_more_cb, NULL);
+    ad->circle_surface = eext_circle_surface_conformant_add(ad->layout);
     ad->circle_slider = eext_circle_object_slider_add(ad->layout, ad->circle_surface);
     eext_circle_object_angle_min_max_set(ad->circle_slider, MIN_ANGLE, MAX_ANGLE);
     eext_circle_object_item_angle_min_max_set(ad->circle_slider, "bg", MIN_ANGLE, MAX_ANGLE);
@@ -260,15 +265,7 @@ create_base_gui(appdata_s *ad)
     eext_circle_object_item_radius_set(ad->circle_slider, "bg", default_radius * 0.7);
     eext_rotary_object_event_activated_set(ad->circle_slider, EINA_TRUE);
     evas_object_smart_callback_add(ad->circle_slider, "value,changed", _circle_slider_value_changed_cb, ad);
-
-	/* Bottom button */
-	ad->button = elm_button_add(ad->layout);
-	elm_object_text_set(ad->button, "Play");
-	elm_object_style_set(ad->button, "bottom");
-	evas_object_smart_callback_add(ad->button, "clicked", _bottom_button_clicked_cb, ad);
-	evas_object_show(ad->button);
-    elm_object_part_content_set(ad->layout, "elm.swallow.button", ad->button);
-    ad->button_showing_play = true;
+	elm_object_part_content_set(ad->layout, "elm.swallow.content", ad->circle_surface);
 
 	/* Box that contains a Label */
 	ad->box = elm_box_add(ad->layout);
